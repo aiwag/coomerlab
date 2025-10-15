@@ -10,7 +10,7 @@ export default function BaseLayout({
   return (
     <>
       <DragWindowRegion title="CoomerLabs: Funtimes" />
-      <NavigationMenu />
+      {/* <NavigationMenu /> */}
        {/* <div className="flex p-2 justify-between items-center gap-2 bg-neutral-900 text-white">
               <div className="flex flex-row items-center gap-2">
                 <InitialIcons /> <span>Chaturbate</span>
