@@ -32,6 +32,7 @@ import {
 const menuItems = [
   { to: "/", label: "home", icon: <Home size={18} /> },
   { to: "/camviewer", label: "camviewer", icon: <Camera size={18} /> },
+  { to: "/camviewer2", label: "camviewer2", icon: <Camera size={18} /> },
   { to: "/chaturbate", label: "chaturbate", icon: <Video size={18} /> },
   { to: "/wallheaven", label: "wallheaven", icon: <Image size={18} /> },
   { to: "/coomerKemono", label: "coomerKemono", icon: <Users size={18} /> },

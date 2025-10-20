@@ -237,7 +237,7 @@ interface CarouselApiResponse {
   rooms: CarouselRoom[];
 }
 
-const API_BASE_URL = "https://chaturbate.com/api/ts/";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL + '/api/ts/';
 const CHROME_HEADERS = {
   "User-Agent":
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
