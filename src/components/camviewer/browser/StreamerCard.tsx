@@ -13,7 +13,7 @@ export const StreamerCard = React.memo(({ streamer }: StreamerCardProps) => {
 
   const handleAddStream = (e: React.MouseEvent) => {
     e.stopPropagation();
-    addStream(`https://chaturbate.com/${streamer.username}`);
+    addStream(`https://chaturbate.com/fullvideo/?b=${streamer.username}`);
   };
 
   return (
