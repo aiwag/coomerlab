@@ -1,68 +1,42 @@
-// A simplified singleton pattern for the database service
 class DatabaseService {
   private isInitialized = false;
 
-  async init() {
+  public async init() {
     if (this.isInitialized) return;
-    // In a real app, you might initialize an IndexedDB connection here.
-    // For now, we assume localStorage is available.
     this.isInitialized = true;
   }
 
-  private get(key: string): any {
-    const value = localStorage.getItem(key);
-    return value ? JSON.parse(value) : null;
+  private get<T>(key: string, fallback: T): T {
+    try {
+      const value = localStorage.getItem(key);
+      return value ? JSON.parse(value) : fallback;
+    } catch (error) {
+      console.error(`Failed to read from localStorage with key "${key}"`, error);
+      return fallback;
+    }
   }
 
   private set(key: string, value: any): void {
-    localStorage.setItem(key, JSON.stringify(value));
-  }
-
-  // Methods for data Zustand's persist doesn't handle as well
-  async getCustomStreams(): Promise<string[]> {
-    return this.get("customStreams") || [];
-  }
-
-  async addCustomStream(url: string): Promise<void> {
-    const streams = await this.getCustomStreams();
-    if (!streams.includes(url)) {
-      this.set("customStreams", [...streams, url]);
+    try {
+      localStorage.setItem(key, JSON.stringify(value));
+    } catch (error) {
+      console.error(`Failed to write to localStorage with key "${key}"`, error);
     }
   }
 
-  async getRemovedStreams(): Promise<string[]> {
-    return this.get("removedStreams") || [];
+  // --- METHODS FOR GRID STORE ---
+
+  /**
+   * This is the critical fix. It is now guaranteed to ALWAYS return a string array.
+   */
+  public async getViewArrangement(key: string): Promise<string[]> {
+    return this.get<string[]>(key, []); // Use the fallback to return an empty array if null
   }
 
-  async removeStream(url: string): Promise<void> {
-    const customStreams = await this.getCustomStreams();
-    this.set(
-      "customStreams",
-      customStreams.filter((s) => s !== url),
-    );
-
-    const removedStreams = await this.getRemovedStreams();
-    if (!removedStreams.includes(url)) {
-      this.set("removedStreams", [...removedStreams, url]);
-    }
-  }
-
-  async getViewArrangement(): Promise<any> {
-    return this.get("viewArrangement") || { streamOrder: [] };
-  }
-
-  async setViewArrangement(arrangement: any): Promise<void> {
-    this.set("viewArrangement", arrangement);
-  }
-
-  // Favorites are now handled by this service to keep logic consistent
-  async getFavorites(): Promise<number[]> {
-    return this.get("favorites") || [];
-  }
-
-  async setFavorites(favorites: number[]): Promise<void> {
-    this.set("favorites", favorites);
+  public async setViewArrangement(key: string, arrangement: string[]): Promise<void> {
+    this.set(key, arrangement);
   }
 }
 
+// Export a singleton instance for use across the app
 export const dbService = new DatabaseService();

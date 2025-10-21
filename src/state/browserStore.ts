@@ -1,17 +1,14 @@
-import { create } from "zustand";
-import {
-  getMostViewedRooms,
-  searchRooms,
-  getTopRatedRooms,
-  getTrendingRooms,
-  Streamer,
-  CarouselGender,
-} from "@/services/chaturbateApiService";
+import { create } from 'zustand';
+import { getMostViewedRooms, searchRooms, getTopRatedRooms, getTrendingRooms, Streamer, CarouselGender } from '@/services/chaturbateApiService';
 
-export type BrowseMode = "mostViewed" | "topRated" | "trending" | "search";
+export type BrowseMode = 'mostViewed' | 'topRated' | 'trending' | 'search';
+export type SortByType = 'num_users' | 'num_followers' | 'display_age' | 'start_dt_utc';
+
+interface Filters { minViewers: number; region: string; showNew: boolean; showVerified: boolean; }
 
 interface BrowserState {
   streamers: Streamer[];
+  filteredStreamers: Streamer[];
   isLoading: boolean;
   error: string | null;
   currentPage: number;
@@ -19,124 +16,96 @@ interface BrowserState {
   browseMode: BrowseMode;
   searchTerm: string;
   activeSearchQuery: string;
-  carouselGender: CarouselGender;
-
-  // Actions
+  abortController: AbortController | null;
+  filterPanelOpen: boolean;
+  filters: Filters;
+  sortBy: SortByType;
+  
   fetchStreamers: (isLoadMore?: boolean) => Promise<void>;
   setBrowseMode: (mode: BrowseMode) => void;
   setSearchTerm: (term: string) => void;
   executeSearch: (term: string) => void;
-  setCarouselGender: (gender: CarouselGender) => void;
+  cleanup: () => void;
+  toggleFilterPanel: () => void;
+  setFilters: (newFilters: Partial<Filters>) => void;
+  setSortBy: (sort: SortByType) => void;
+  clearFilters: () => void;
 }
+
+const initialFilters: Filters = { minViewers: 0, region: '', showNew: false, showVerified: false };
+
+const applyFiltersAndSort = (streamers: Streamer[], filters: Filters, sortBy: SortByType): Streamer[] => {
+  const filtered = streamers.filter(s => s.num_users >= filters.minViewers && (!filters.region || s.country.toLowerCase() === filters.region.toLowerCase()) && (!filters.showNew || s.is_new) && (!filters.showVerified || s.is_age_verified));
+  return filtered.sort((a, b) => { if (sortBy === 'display_age') return (a.display_age ?? 99) - (b.display_age ?? 99); if (sortBy === 'start_dt_utc') return new Date(b.start_dt_utc).getTime() - new Date(a.start_dt_utc).getTime(); return (b[sortBy] ?? 0) - (a[sortBy] ?? 0); });
+};
 
 export const useBrowserStore = create<BrowserState>((set, get) => ({
   streamers: [],
+  filteredStreamers: [],
   isLoading: false,
   error: null,
   currentPage: 1,
   hasMore: true,
-  browseMode: "mostViewed",
-  searchTerm: "",
-  activeSearchQuery: "",
-  carouselGender: "",
+  browseMode: 'mostViewed',
+  searchTerm: '',
+  activeSearchQuery: '',
+  abortController: null,
+  filterPanelOpen: false,
+  filters: initialFilters,
+  sortBy: 'num_users',
 
   fetchStreamers: async (isLoadMore = false) => {
     const state = get();
     if (state.isLoading) return;
-    set({ isLoading: true, error: null });
+    
+    state.abortController?.abort();
+    const newAbortController = new AbortController();
+    set({ isLoading: true, error: null, abortController: newAbortController });
 
     const pageToFetch = isLoadMore ? state.currentPage + 1 : 1;
+    const limit = 90;
 
     try {
       let response;
-      const canPaginate =
-        state.browseMode === "mostViewed" || state.browseMode === "search";
-
-      if (!canPaginate && isLoadMore) {
-        set({ isLoading: false, hasMore: false });
-        return;
-      }
+      const signal = newAbortController.signal;
+      
+      const isCarousel = state.browseMode === 'topRated' || state.browseMode === 'trending';
+      if (isCarousel && isLoadMore) { set({ isLoading: false, hasMore: false }); return; }
 
       switch (state.browseMode) {
-        case "search":
-          if (!state.activeSearchQuery) {
-            set({ isLoading: false, streamers: [], hasMore: false });
-            return;
-          }
-          response = await searchRooms(state.activeSearchQuery, pageToFetch);
+        case 'search':
+          if (!state.activeSearchQuery) { set({ isLoading: false, streamers: [], hasMore: false }); return; }
+          response = await searchRooms(state.activeSearchQuery, pageToFetch, limit, signal);
           break;
-        case "topRated":
-          response = await getTopRatedRooms(state.carouselGender);
-          break;
-        case "trending":
-          response = await getTrendingRooms(state.carouselGender);
-          break;
-        case "mostViewed":
-        default:
-          response = await getMostViewedRooms(pageToFetch);
-          break;
+        case 'topRated': response = await getTopRatedRooms(signal); break;
+        case 'trending': response = await getTrendingRooms(signal); break;
+        default: response = await getMostViewedRooms(pageToFetch, limit, signal); break;
       }
-
-      const newStreamers = isLoadMore
-        ? [...state.streamers, ...response.rooms]
-        : response.rooms;
-
-      set({
+      
+      const newStreamers = isLoadMore ? [...state.streamers, ...response.rooms] : response.rooms;
+      
+      set(s => ({
         streamers: newStreamers,
+        filteredStreamers: applyFiltersAndSort(newStreamers, s.filters, s.sortBy),
         currentPage: pageToFetch,
-        hasMore: canPaginate && response.rooms.length === response.limit,
-      });
+        hasMore: isCarousel ? false : response.rooms.length === limit,
+      }));
     } catch (err: any) {
-      set({ error: err.message });
+      if (err.name !== 'AbortError') set({ error: err.message });
     } finally {
-      set({ isLoading: false });
+      if (get().abortController === newAbortController) set({ isLoading: false });
     }
   },
 
-  setBrowseMode: (mode: BrowseMode) => {
-    const canPaginate = mode === "mostViewed" || mode === "search";
-    set({
-      browseMode: mode,
-      streamers: [],
-      currentPage: 1,
-      hasMore: canPaginate,
-      error: null,
-    });
-    if (mode !== "search") {
-      get().fetchStreamers();
-    }
-  },
-
-  setSearchTerm: (term: string) => {
-    set({ searchTerm: term });
-  },
-
-  executeSearch: (term: string) => {
-    if (!term) {
-      if (get().browseMode === "search") {
-        get().setBrowseMode("mostViewed");
-      }
-      return;
-    }
-    set({
-      browseMode: "search",
-      activeSearchQuery: term,
-      streamers: [],
-      currentPage: 1,
-      hasMore: true,
-      error: null,
-    });
-    get().fetchStreamers();
-  },
-
-  setCarouselGender: (gender: CarouselGender) => {
-    if (get().carouselGender === gender) return;
-    set({
-      carouselGender: gender,
-      currentPage: 1,
-      streamers: [],
-      hasMore: false,
-    });
-    get().fetchStreamers();
-  },
+  setBrowseMode: (mode) => { set({ browseMode: mode, streamers: [], currentPage: 1, hasMore: true, error: null }); get().fetchStreamers(); },
+  setSearchTerm: (term) => set({ searchTerm: term }),
+  executeSearch: (term) => { if (!term) { if (get().browseMode === 'search') get().setBrowseMode('mostViewed'); return; } set({ browseMode: 'search', activeSearchQuery: term, streamers: [], currentPage: 1, hasMore: true, error: null }); get().fetchStreamers(); },
+  
+  // This is the CRITICAL cleanup function
+  cleanup: () => { get().abortController?.abort(); set({ streamers: [], filteredStreamers: [], currentPage: 1, error: null }); },
+  
+  toggleFilterPanel: () => set(state => ({ filterPanelOpen: !state.filterPanelOpen })),
+  setFilters: (newFilters) => { const filters = { ...get().filters, ...newFilters }; set(s => ({ filters, filteredStreamers: applyFiltersAndSort(s.streamers, filters, s.sortBy) })) },
+  setSortBy: (sort) => { set(s => ({ sortBy: sort, filteredStreamers: applyFiltersAndSort(s.streamers, s.filters, sort) })) },
+  clearFilters: () => { set(s => ({ filters: initialFilters, filteredStreamers: applyFiltersAndSort(s.streamers, initialFilters, s.sortBy) })) },
 }));

@@ -1,131 +1,69 @@
-// // src/components/camviewer/grid/StreamGrid.tsx
-
-// import React, { useMemo, useCallback } from "react";
-// import {
-//   DndContext,
-//   PointerSensor,
-//   useSensor,
-//   useSensors,
-//   DragOverlay,
-// } from "@dnd-kit/core";
-// import { SortableContext, rectSortingStrategy } from "@dnd-kit/sortable";
-// import { useGridStore } from "@/state/gridStore";
-// import { useSettingsStore } from "@/state/settingsStore";
-// import { SortableWebview } from "./SortableWebview";
-
-// export function StreamGrid() {
-//   const { streamUrls, handleDragStart, handleDragEnd, activeId } =
-//     useGridStore();
-//   const { gridSize, autoMode } = useSettingsStore();
-
-//   const sensors = useSensors(
-//     useSensor(PointerSensor, { activationConstraint: { distance: 10 } }),
-//   );
-
-//   const calculateOptimalGrid = useCallback(() => {
-//     if (!autoMode) return gridSize;
-//     const count = streamUrls.length;
-//     if (count <= 1) return 1;
-//     if (count <= 4) return 2;
-//     if (count <= 9) return 3;
-//     return 4; // Max auto size
-//   }, [autoMode, gridSize, streamUrls.length]);
-
-//   const finalGridSize = useMemo(calculateOptimalGrid, [calculateOptimalGrid]);
-
-//   return (
-//     <DndContext
-//       sensors={sensors}
-//       onDragStart={handleDragStart}
-//       onDragEnd={handleDragEnd}
-//     >
-//       <SortableContext items={streamUrls} strategy={rectSortingStrategy}>
-//         <div
-//           className="custom-scrollbar grid h-full gap-1.5 overflow-y-auto p-1.5"
-//           style={{
-//             gridTemplateColumns: `repeat(${finalGridSize}, minmax(0, 1fr))`,
-//           }}
-//         >
-//           {streamUrls.map((url, index) => (
-//             <SortableWebview key={url} id={url} url={url} index={index} />
-//           ))}
-//         </div>
-//       </SortableContext>
-//       <DragOverlay>
-//         {activeId ? (
-//           <div className="flex aspect-video items-center justify-center rounded-md border border-cyan-500 bg-neutral-800 p-1 text-white">
-//             Dragging {activeId.split("/").pop()}
-//           </div>
-//         ) : null}
-//       </DragOverlay>
-//     </DndContext>
-//   );
-// }
-
-
-
-
-
-// src/components/camviewer/grid/StreamGrid.tsx
-
-import React, { useMemo } from 'react';
+import React, { useState } from 'react';
 import { DndContext, PointerSensor, useSensor, useSensors, DragOverlay } from '@dnd-kit/core';
-import { SortableContext, rectSortingStrategy } from '@dnd-kit/sortable';
+import { SortableContext } from '@dnd-kit/sortable';
 import { useGridStore } from '@/state/gridStore';
 import { useSettingsStore } from '@/state/settingsStore';
 import { useResizeObserver } from '@/hooks/useResizeObserver';
+import { useMagicGrid } from '@/hooks/useMagicGrid';
 import { SortableWebview } from './SortableWebview';
-import { getUsernameFromUrl } from '@/utils/formatters';
+import { getUsernameFromUrl, generateThumbUrl } from '@/utils/formatters';
+import { HierarchicalLayout } from './HierarchicalLayout';
 
-const TARGET_RATIO = 16 / 9; // Target a "watchable" 16:9 aspect ratio for each cell
+function DraggingItem({ url }: { url: string }) {
+    const username = getUsernameFromUrl(url);
+    const thumbUrl = generateThumbUrl(username);
+    return (<div className="rounded-md border-2 border-cyan-500 bg-neutral-800 shadow-2xl relative overflow-hidden h-full w-full"><img src={thumbUrl} className="w-full h-full object-cover opacity-30" alt="" /><div className="absolute inset-0 flex items-center justify-center"><p className="text-white font-semibold text-lg">{username}</p></div></div>);
+}
 
 export function StreamGrid() {
-  const { streamUrls, handleDragStart, handleDragEnd, activeId } = useGridStore();
-  const { magicGrid } = useSettingsStore();
+  const { streamUrls, handleDragEnd } = useGridStore();
+  const { layoutMode } = useSettingsStore();
   const { ref, entry } = useResizeObserver<HTMLDivElement>();
+  const [activeId, setActiveId] = useState<string | null>(null);
 
-  const optimalColumns = useMemo(() => {
-    if (!magicGrid || !entry || streamUrls.length === 0) {
-      return Math.ceil(Math.sqrt(streamUrls.length)) || 1; // Default to a simple square grid
-    }
+  const containerWidth = entry?.contentRect.width || 0;
+  const containerHeight = entry?.contentRect.height || 0;
 
-    const containerWidth = entry.contentRect.width;
-    const containerHeight = entry.contentRect.height;
-    let bestLayout = { cols: 1, ratioDiff: Infinity };
-
-    // Iterate through possible column counts to find the best fit
-    for (let cols = 1; cols <= streamUrls.length; cols++) {
-      const rows = Math.ceil(streamUrls.length / cols);
-      const cellWidth = containerWidth / cols;
-      const cellHeight = containerHeight / rows;
-      const currentRatio = cellWidth / cellHeight;
-      const ratioDiff = Math.abs(currentRatio - TARGET_RATIO);
-      
-      if (ratioDiff < bestLayout.ratioDiff) {
-        bestLayout = { cols, ratioDiff };
-      }
-    }
-    return bestLayout.cols;
-  }, [magicGrid, entry, streamUrls.length]);
+  const { columns: magicColumns, cellWidth, cellHeight } = useMagicGrid({
+    containerWidth,
+    containerHeight,
+    streamCount: streamUrls.length,
+  });
   
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 10 } }));
 
+  // --- LAYOUT ROUTER ---
+  if (layoutMode === 'hierarchical') return <HierarchicalLayout />;
+
+  const columns = typeof layoutMode === 'number' ? layoutMode : magicColumns;
+  const isDraggable = typeof layoutMode === 'number' || layoutMode === 'magic';
+
   return (
-    <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-      <SortableContext items={streamUrls} strategy={rectSortingStrategy}>
-        <div
-          ref={ref}
-          className="h-full w-full grid bg-black custom-scrollbar overflow-hidden gap-px"
-          style={{ gridTemplateColumns: `repeat(${optimalColumns}, minmax(0, 1fr))` }}
-        >
-          {streamUrls.map((url, index) => (
-            <SortableWebview key={url} id={url} url={url} index={index} />
-          ))}
+    <DndContext sensors={sensors} onDragStart={(e) => setActiveId(e.active.id as string)} onDragEnd={(e) => { handleDragEnd(e); setActiveId(null); }}>
+      <SortableContext items={streamUrls}>
+        <div ref={ref} className="h-full w-full bg-black relative overflow-hidden">
+          {streamUrls.map((url, index) => {
+            const calculatedWidth = layoutMode === 'magic' ? cellWidth : containerWidth / columns;
+            const calculatedHeight = layoutMode === 'magic' ? cellHeight : calculatedWidth / (16/9);
+            const col = index % columns;
+            const row = Math.floor(index / columns);
+            const top = row * calculatedHeight;
+            const left = col * calculatedWidth;
+
+            if (calculatedWidth === 0 || calculatedHeight === 0) return null;
+
+            return (
+              <SortableWebview 
+                  key={url} id={url} url={url} index={index}
+                  isDragging={activeId === url}
+                  isDraggable={isDraggable}
+                  width={calculatedWidth} height={calculatedHeight} top={top} left={left}
+              />
+            );
+          })}
         </div>
       </SortableContext>
-      <DragOverlay>
-        {activeId ? <div className="aspect-video p-1 rounded-md border border-cyan-500 bg-neutral-800 flex items-center justify-center text-white font-semibold">{getUsernameFromUrl(activeId) ?? '...'}</div> : null}
-      </DragOverlay>
+      <DragOverlay>{activeId ? <DraggingItem url={activeId} /> : null}</DragOverlay>
     </DndContext>
   );
 }
