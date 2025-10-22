@@ -4,14 +4,13 @@ import { useTranslation } from "react-i18next";
 import InitialIcons from "@/components/template/InitialIcons";
 import { motion, AnimatePresence } from "framer-motion";
 import { Home, Camera, Video, Image, Users, Download, Heart, Bookmark, Activity, Menu, X, Search } from "lucide-react";
-import { GlobalSearch } from "./GlobalSearch";
-import { NotificationPanel } from "./NotificationPanel";
-import { AccountDropdown } from "./AccountDropdown";
+import { GlobalSearch } from "@/components/template/GlobalSearch";
+import { NotificationPanel } from "@/components/template/NotificationPanel";
+import { AccountDropdown } from "@/components/template/AccountDropdown";
 
 const menuItems = [
   { to: "/", label: "home", icon: <Home size={18} /> },
   { to: "/camviewer", label: "camviewer", icon: <Camera size={18} /> },
-  { to: "/chaturbate", label: "chaturbate", icon: <Video size={18} /> },
   { to: "/wallheaven", label: "wallheaven", icon: <Image size={18} /> },
   { to: "/coomerKemono", label: "coomerKemono", icon: <Users size={18} /> },
   { to: "/downloads", label: "downloads", icon: <Download size={18} /> },
