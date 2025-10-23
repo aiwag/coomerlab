@@ -11,6 +11,7 @@ import { AccountDropdown } from "@/components/template/AccountDropdown";
 const menuItems = [
   { to: "/", label: "home", icon: <Home size={18} /> },
   { to: "/camviewer", label: "camviewer", icon: <Camera size={18} /> },
+  { to: "/redgifs", label: "redgifs", icon: <Video size={18} /> },
   { to: "/wallheaven", label: "wallheaven", icon: <Image size={18} /> },
   { to: "/coomerKemono", label: "coomerKemono", icon: <Users size={18} /> },
   { to: "/downloads", label: "downloads", icon: <Download size={18} /> },
