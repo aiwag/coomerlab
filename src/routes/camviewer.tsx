@@ -22,8 +22,9 @@ function CamViewerPage() {
     <div className="flex h-screen w-screen overflow-hidden bg-neutral-900 text-white">
       {browserVisible && <StreamBrowserSidebar />}
       <StreamListSidebar />
-      <main className="flex-1 overflow-hidden bg-black">
+      <main className="flex-1 overflow-hidden bg-black pb-1">
         {fullViewMode !== null ? <FullViewLayout /> : <StreamGrid />}
+        <p className="text-center">Number of streams: {useGridStore((state) => state.streamUrls.length)}</p>
       </main>
       <FullscreenModal />
     </div>
