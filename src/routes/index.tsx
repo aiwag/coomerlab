@@ -56,6 +56,18 @@ function RouteComponent() {
       title: 'CoomerKemono',
       description: 'Artist collections',
     },
+    {
+      to: "/fapello",
+      icon: <Image size={18} />,
+      title: 'Fapello',
+      description: 'Adult content',
+    },
+    {
+      to: "/javtube",
+      icon: <Video color="red" size={18} />,
+      title: 'Javtube',
+      description: 'Adult content',
+    },
   ]
 
   const container = {
