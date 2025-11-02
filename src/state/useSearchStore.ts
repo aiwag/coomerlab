@@ -20,8 +20,6 @@ interface SearchState {
 const allMenuItems = [
   { type: 'page', title: 'Home', to: '/' },
   { type: 'page', title: 'Cam Viewer', to: '/camviewer' },
-  { type: 'page', title: 'Downloads', to: '/downloads' },
-  { type: 'page', title: 'Favorites', to: '/favorites' },
 ];
 
 const performSearch = (query: string): SearchResult[] => {

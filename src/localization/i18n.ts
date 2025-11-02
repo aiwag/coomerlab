@@ -6,14 +6,14 @@ i18n.use(initReactI18next).init({
   resources: {
     en: {
       translation: {
-        appName: "electron-shadcn",
+        appName: "coomerlabs-desktop",
         titleHomePage: "Home",
         titleSecondPage: "Settings",
       },
     },
     "pt-BR": {
       translation: {
-        appName: "electron-shadcn",
+        appName: "coomerlabs-desktop",
         titleHomePage: "Home",
         titleSecondPage: "Configurações",
       },

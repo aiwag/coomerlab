@@ -1,3 +1,4 @@
+// vite.main.config.mts
 import { defineConfig } from "vite";
 import path from "path";
 

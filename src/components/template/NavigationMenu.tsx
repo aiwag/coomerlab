@@ -15,8 +15,10 @@ const menuItems = [
   { to: "/", label: "home", icon: <Home size={18} /> },
   { to: "/camviewer", label: "camviewer", icon: <Camera size={18} /> },
   { to: "/redgifs", label: "redgifs", icon: <Video size={18} /> },
+  { to: "/fapello", label: "fapello", icon: <Image size={18} /> },
   { to: "/wallheaven", label: "wallheaven", icon: <Image size={18} /> },
   { to: "/coomerKemono", label: "coomerKemono", icon: <Users size={18} /> },
+  { to: "/javtube", label: "javtube", icon: <Video color="red" size={18} /> },
 ];
 
 type FloatingButtonPosition = { x: number; y: number };
