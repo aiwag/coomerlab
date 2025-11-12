@@ -4,11 +4,63 @@ import { useQuery, useQueryClient, useInfiniteQuery } from '@tanstack/react-quer
 import { useVirtualizer } from '@tanstack/react-virtual';
 import Plyr from 'plyr';
 import 'plyr-react/plyr.css';
+import {
+  ArrowLeft,
+  ArrowRight,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Close,
+  Download,
+  ExternalLink,
+  Filter,
+  Grid,
+  Heart,
+  Loader2,
+  Menu,
+  Pause,
+  Play,
+  Search,
+  Settings,
+  Share,
+  Star,
+  TrendingUp,
+  User,
+  Volume2,
+  VolumeX,
+  X,
+  Maximize2,
+  Minimize2,
+  Eye,
+  Users,
+  Hash,
+  Camera,
+  Film,
+  Image,
+  RefreshCw,
+  Bookmark,
+  MoreVertical,
+  Info,
+  Home,
+  ChevronDown,
+  UserCheck,
+  Zap,
+  Sparkles,
+  Crown,
+  SkipBack,
+  SkipForward,
+  Sliders,
+  PlayCircle,
+  PauseCircle,
+  RotateCw,
+  ZoomIn,
+  ZoomOut
+} from 'lucide-react';
 
 // API Endpoints
 const API_BASE = 'https://api.redgifs.com/v2';
 const AUTH_API = `${API_BASE}/auth/temporary`;
-const TRENDS_API = `${API_BASE}/gifs/search?order=trending&count=30&type=g&verified=y`;
+const TRENDS_API = `${API_BASE}/gifs/search?order=trending&count=50&type=g&verified=y`;
 const CREATORS_API = `${API_BASE}/creators/search/previews?order=trending&page=1&count=30&verified=y`;
 const NICHES_API = `${API_BASE}/niches/search/previews?order=subscribers&page=1&count=30`;
 
@@ -129,6 +181,7 @@ interface AuthResponse {
 // Sort options
 type SortOption = 'trending' | 'latest' | 'top7' | 'top28' | 'top365' | 'random';
 type ContentType = 'all' | 'gifs' | 'images' | 'videos';
+type SlideshowSpeed = 'slow' | 'medium' | 'fast';
 
 // Auth context
 interface AuthContextType {
@@ -339,7 +392,7 @@ const useSearch = (query: string, type: 'all' | 'creators' | 'gifs' | 'user' = '
   });
 };
 
-// Media Item Component
+// Compact Media Item Component
 const MediaItem: React.FC<{
   item: MediaItem;
   quality: 'hd' | 'sd';
@@ -348,9 +401,13 @@ const MediaItem: React.FC<{
   isActive?: boolean;
   style?: React.CSSProperties;
   gridColumns: number;
-}> = ({ item, quality, onClick, onUserClick, isActive = false, style, gridColumns }) => {
+  index: number;
+  focusedIndex: number;
+}> = ({ item, quality, onClick, onUserClick, isActive = false, style, gridColumns, index, focusedIndex }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isLiked, setIsLiked] = useState(false);
+  const [isBookmarked, setIsBookmarked] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const playerRef = useRef<Plyr | null>(null);
   
@@ -398,9 +455,19 @@ const MediaItem: React.FC<{
     }
   }, [isActive, isVideo]);
   
+  const handleLike = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsLiked(!isLiked);
+  };
+  
+  const handleBookmark = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsBookmarked(!isBookmarked);
+  };
+  
   return (
     <div
-      className={`relative overflow-hidden rounded-lg cursor-pointer bg-gray-900 group transition-all duration-300 ${isActive ? 'ring-2 ring-blue-500 shadow-2xl' : 'hover:ring-1 hover:ring-gray-600'}`}
+      className={`relative overflow-hidden rounded cursor-pointer bg-gray-900 group transition-all duration-200 ${isActive ? 'ring-2 ring-blue-500 shadow-2xl' : 'hover:ring-1 hover:ring-gray-600'} ${focusedIndex === index ? 'ring-2 ring-purple-500' : ''}`}
       style={style}
       onClick={onClick}
       onMouseEnter={() => setIsHovered(true)}
@@ -425,36 +492,68 @@ const MediaItem: React.FC<{
       )}
       
       {isHovered && !isActive && (
-        <div className="absolute inset-0 bg-black bg-opacity-30 flex flex-col justify-end p-2 transition-opacity duration-300">
-          <div className="flex items-center justify-between">
-            <div className="text-white text-xs truncate">{item.userName}</div>
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent flex flex-col justify-end p-2 transition-opacity duration-200">
+          <div className="flex items-center justify-between mb-1">
+            <div className="text-white text-xs font-medium truncate flex items-center">
+              {item.userName}
+              {item.verified && <UserCheck className="h-3 w-3 ml-1 text-blue-400" />}
+            </div>
             <button
-              className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-2 py-1 rounded transition-colors"
+              className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-1.5 py-0.5 rounded transition-colors flex items-center"
               onClick={(e) => {
                 e.stopPropagation();
                 onUserClick(item.userName);
               }}
             >
+              <User className="h-3 w-3 mr-1" />
               Profile
             </button>
           </div>
-          <div className="flex justify-between text-white text-xs mt-1">
-            <span>{item.likes} likes</span>
-            <span>{item.views} views</span>
+          <div className="flex justify-between text-white text-xs">
+            <span className="flex items-center">
+              <Heart className={`h-3 w-3 mr-1 ${isLiked ? 'fill-red-500 text-red-500' : ''}`} />
+              {item.likes}
+            </span>
+            <span className="flex items-center">
+              <Eye className="h-3 w-3 mr-1" />
+              {item.views}
+            </span>
+          </div>
+          <div className="flex justify-between mt-1">
+            <button
+              className="text-white p-1 rounded-full bg-black/50 hover:bg-black/70 transition-colors"
+              onClick={handleLike}
+            >
+              <Heart className={`h-3 w-3 ${isLiked ? 'fill-red-500 text-red-500' : ''}`} />
+            </button>
+            <button
+              className="text-white p-1 rounded-full bg-black/50 hover:bg-black/70 transition-colors"
+              onClick={handleBookmark}
+            >
+              <Bookmark className={`h-3 w-3 ${isBookmarked ? 'fill-blue-500 text-blue-500' : ''}`} />
+            </button>
+            <button
+              className="text-white p-1 rounded-full bg-black/50 hover:bg-black/70 transition-colors"
+              onClick={(e) => {
+                e.stopPropagation();
+                // Implement share functionality
+              }}
+            >
+              <Share className="h-3 w-3" />
+            </button>
           </div>
         </div>
       )}
       
       {item.verified && (
-        <div className="absolute top-2 right-2 bg-blue-500 rounded-full p-1 z-10">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-white" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-          </svg>
+        <div className="absolute top-1 right-1 bg-blue-500 rounded-full p-0.5 z-10">
+          <UserCheck className="h-3 w-3 text-white" />
         </div>
       )}
       
       {isVideo && (
-        <div className="absolute bottom-2 left-2 bg-black bg-opacity-60 rounded px-1 py-0.5 text-xs text-white">
+        <div className="absolute bottom-1 left-1 bg-black/60 rounded px-1 py-0.5 text-xs text-white flex items-center">
+          {item.hasAudio ? <Volume2 className="h-3 w-3 mr-1" /> : <VolumeX className="h-3 w-3 mr-1" />}
           {item.duration && `${Math.floor(item.duration / 60)}:${(item.duration % 60).toString().padStart(2, '0')}`}
         </div>
       )}
@@ -462,69 +561,100 @@ const MediaItem: React.FC<{
   );
 };
 
-// Creator Card Component
+// Compact Creator Card Component
 const CreatorCard: React.FC<{
   creator: Creator;
   onClick: () => void;
 }> = ({ creator, onClick }) => {
+  const [isFollowing, setIsFollowing] = useState(false);
+  
+  const handleFollow = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsFollowing(!isFollowing);
+  };
+  
   return (
     <div 
-      className="bg-gray-800 rounded-lg p-4 cursor-pointer hover:bg-gray-700 transition-all duration-300 hover:shadow-lg hover:shadow-gray-900/50"
+      className="bg-gray-800 rounded overflow-hidden cursor-pointer hover:bg-gray-700 transition-all duration-200 hover:shadow-lg hover:shadow-gray-900/50 group"
       onClick={onClick}
     >
-      <div className="flex items-center space-x-4">
+      <div className="relative h-24">
         <img 
-          src={creator.profileImageUrl || 'https://via.placeholder.com/64'} 
+          src={creator.profileImageUrl || 'https://via.placeholder.com/300x200'} 
           alt={creator.username} 
-          className="w-16 h-16 rounded-full object-cover ring-2 ring-gray-700"
+          className="w-full h-full object-cover"
         />
-        <div className="flex-1">
-          <div className="flex items-center">
-            <h3 className="text-white font-medium">{creator.name}</h3>
-            {creator.verified && (
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-500 ml-1" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              </svg>
-            )}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
+        <div className="absolute bottom-1 left-1 right-1">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <h3 className="text-white text-sm font-medium truncate">{creator.name}</h3>
+              {creator.verified && <UserCheck className="h-3 w-3 text-blue-400 ml-1 flex-shrink-0" />}
+            </div>
+            <button
+              className={`text-xs px-1.5 py-0.5 rounded transition-colors ${
+                isFollowing 
+                  ? 'bg-gray-600 text-white hover:bg-gray-500' 
+                  : 'bg-blue-600 text-white hover:bg-blue-700'
+              }`}
+              onClick={handleFollow}
+            >
+              {isFollowing ? 'Following' : 'Follow'}
+            </button>
           </div>
-          <p className="text-gray-400 text-sm">@{creator.username}</p>
-          <p className="text-gray-500 text-xs mt-1 line-clamp-2">{creator.description || 'No description'}</p>
-          <div className="flex space-x-4 mt-2 text-xs text-gray-400">
-            <span>{creator.followers} followers</span>
-            <span>{creator.gifs} gifs</span>
-            <span>{creator.views.toLocaleString()} views</span>
-          </div>
+          <p className="text-gray-300 text-xs">@{creator.username}</p>
+        </div>
+      </div>
+      <div className="p-2">
+        <p className="text-gray-400 text-xs line-clamp-2 mb-1">{creator.description || 'No description'}</p>
+        <div className="flex justify-between text-xs text-gray-400">
+          <span className="flex items-center">
+            <Users className="h-3 w-3 mr-1" />
+            {creator.followers.toLocaleString()}
+          </span>
+          <span className="flex items-center">
+            <Camera className="h-3 w-3 mr-1" />
+            {creator.gifs}
+          </span>
+          <span className="flex items-center">
+            <Eye className="h-3 w-3 mr-1" />
+            {creator.views.toLocaleString()}
+          </span>
         </div>
       </div>
     </div>
   );
 };
 
-// Niche Card Component
+// Compact Niche Card Component
 const NicheCard: React.FC<{
   niche: Niche;
   onClick: () => void;
 }> = ({ niche, onClick }) => {
   return (
     <div 
-      className="bg-gray-800 rounded-lg overflow-hidden cursor-pointer hover:bg-gray-700 transition-all duration-300 hover:shadow-lg hover:shadow-gray-900/50"
+      className="bg-gray-800 rounded overflow-hidden cursor-pointer hover:bg-gray-700 transition-all duration-200 hover:shadow-lg hover:shadow-gray-900/50 group"
       onClick={onClick}
     >
-      <div className="relative h-32">
+      <div className="relative h-24">
         <img 
           src={niche.cover || 'https://via.placeholder.com/300x200'} 
           alt={niche.name} 
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent"></div>
-        <div className="absolute bottom-2 left-2">
-          <h3 className="text-white font-medium">{niche.name}</h3>
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
+        <div className="absolute bottom-1 left-1">
+          <h3 className="text-white text-sm font-medium flex items-center">
+            <Hash className="h-3 w-3 mr-1" />
+            {niche.name}
+          </h3>
           <p className="text-gray-300 text-xs">{niche.subscribers.toLocaleString()} subscribers</p>
         </div>
       </div>
-      <div className="p-3">
+      <div className="p-2">
         <p className="text-gray-400 text-xs line-clamp-2">{niche.description}</p>
-        <div className="mt-2 text-xs text-gray-500">
+        <div className="mt-1 text-xs text-gray-500 flex items-center">
+          <Film className="h-3 w-3 mr-1" />
           {niche.gifs.toLocaleString()} gifs
         </div>
       </div>
@@ -532,7 +662,7 @@ const NicheCard: React.FC<{
   );
 };
 
-// User Profile Component
+// Compact User Profile Component
 const UserProfileComponent: React.FC<{
   username: string;
   onClose: () => void;
@@ -549,6 +679,7 @@ const UserProfileComponent: React.FC<{
   
   const [sortOption, setSortOption] = useState<SortOption>('new');
   const [contentType, setContentType] = useState<ContentType>('all');
+  const [isFollowing, setIsFollowing] = useState(false);
   
   // Refetch content when sort option or content type changes
   useEffect(() => {
@@ -568,10 +699,14 @@ const UserProfileComponent: React.FC<{
     return allItems;
   }, [userContentQuery.data, aiFilter]);
   
+  const handleFollow = () => {
+    setIsFollowing(!isFollowing);
+  };
+  
   if (userProfileQuery.isLoading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
       </div>
     );
   }
@@ -587,38 +722,37 @@ const UserProfileComponent: React.FC<{
   const user = userProfileQuery.data;
   
   return (
-    <div className="flex flex-col h-full">
-      {/* User Profile Header */}
-      <div className="bg-gray-800 p-6">
-        <div className="flex items-center space-x-4">
+    <div className="flex flex-col h-full overflow-hidden">
+      {/* Compact User Profile Header */}
+      <div className="bg-gray-800 p-3 shadow-lg">
+        <div className="flex items-center space-x-3">
           <button 
-            className="bg-gray-700 rounded-full p-2 text-white hover:bg-gray-600 transition-colors"
+            className="bg-gray-700 rounded-full p-1.5 text-white hover:bg-gray-600 transition-colors"
             onClick={onClose}
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
-            </svg>
+            <ArrowLeft className="h-4 w-4" />
           </button>
           
           <img 
             src={user.profileImageUrl || 'https://via.placeholder.com/100'} 
             alt={user.username} 
-            className="w-20 h-20 rounded-full object-cover ring-2 ring-gray-700"
+            className="w-12 h-12 rounded-full object-cover ring-2 ring-gray-700"
           />
           
           <div className="flex-1">
             <div className="flex items-center">
-              <h2 className="text-2xl font-bold text-white">{user.name}</h2>
+              <h2 className="text-lg font-bold text-white">{user.name}</h2>
               {user.verified && (
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-500 ml-2" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
+                <UserCheck className="h-4 w-4 text-blue-500 ml-1" />
+              )}
+              {user.subscription > 0 && (
+                <Crown className="h-4 w-4 text-yellow-500 ml-1" />
               )}
             </div>
-            <p className="text-gray-400 text-sm">@{user.username}</p>
-            <p className="text-gray-300 text-sm mt-2">{user.description}</p>
+            <p className="text-gray-400 text-xs">@{user.username}</p>
+            <p className="text-gray-300 text-xs mt-1 line-clamp-1">{user.description}</p>
             
-            <div className="flex space-x-6 mt-4 text-sm">
+            <div className="flex space-x-4 mt-2 text-xs">
               <div>
                 <span className="text-white font-medium">{user.followers.toLocaleString()}</span>
                 <span className="text-gray-400 ml-1">followers</span>
@@ -633,33 +767,42 @@ const UserProfileComponent: React.FC<{
               </div>
             </div>
             
-            {/* Social Links */}
-            {user.socialUrl6 && (
-              <div className="mt-4">
+            <div className="flex space-x-2 mt-2">
+              <button
+                className={`px-3 py-1 rounded text-xs transition-colors ${
+                  isFollowing 
+                    ? 'bg-gray-600 text-white hover:bg-gray-500' 
+                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                }`}
+                onClick={handleFollow}
+              >
+                {isFollowing ? 'Following' : 'Follow'}
+              </button>
+              
+              {/* Social Links */}
+              {user.socialUrl6 && (
                 <a 
                   href={user.socialUrl6} 
                   target="_blank" 
                   rel="noopener noreferrer"
-                  className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded transition-colors"
+                  className="inline-flex items-center px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded transition-colors"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zM5.838 12a6.162 6.162 0 1112.324 0 6.162 6.162 0 01-12.324 0zM12 16a4 4 0 110-8 0 4 4 0 018 0zm4.965-10.405a1.44 1.44 0 112.881.001 1.44 1.44 0 01-2.881-.001z"/>
-                  </svg>
+                  <ExternalLink className="h-3 w-3 mr-1" />
                   OnlyFans
                 </a>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
         
-        {/* Sort and Filter Options */}
-        <div className="flex space-x-4 mt-4">
-          <div className="flex items-center space-x-2">
-            <label className="text-gray-300 text-sm">Sort:</label>
+        {/* Compact Sort and Filter Options */}
+        <div className="flex space-x-3 mt-2">
+          <div className="flex items-center space-x-1">
+            <label className="text-gray-300 text-xs">Sort:</label>
             <select
               value={sortOption}
               onChange={(e) => setSortOption(e.target.value as SortOption)}
-              className="bg-gray-700 text-white px-3 py-1 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="bg-gray-700 text-white px-2 py-0.5 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
             >
               <option value="new">Latest</option>
               <option value="trending">Trending</option>
@@ -670,12 +813,12 @@ const UserProfileComponent: React.FC<{
             </select>
           </div>
           
-          <div className="flex items-center space-x-2">
-            <label className="text-gray-300 text-sm">Type:</label>
+          <div className="flex items-center space-x-1">
+            <label className="text-gray-300 text-xs">Type:</label>
             <select
               value={contentType}
               onChange={(e) => setContentType(e.target.value as ContentType)}
-              className="bg-gray-700 text-white px-3 py-1 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="bg-gray-700 text-white px-2 py-0.5 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
             >
               <option value="all">All</option>
               <option value="gifs">Gifs</option>
@@ -687,11 +830,12 @@ const UserProfileComponent: React.FC<{
       </div>
       
       {/* User Content Grid */}
-      <div className="flex-1">
+      <div className="flex-1 overflow-hidden">
         <MasonryGrid
           items={userContentData}
           quality={quality}
           onItemClick={onContentClick}
+          onUserClick={() => {}}
           gridColumns={gridColumns}
           fetchNextPage={userContentQuery.fetchNextPage}
           hasNextPage={userContentQuery.hasNextPage}
@@ -702,7 +846,7 @@ const UserProfileComponent: React.FC<{
   );
 };
 
-// Media Modal Component
+// Enhanced Media Modal with Slideshow
 const MediaModal: React.FC<{
   item: MediaItem | null;
   quality: 'hd' | 'sd';
@@ -710,9 +854,50 @@ const MediaModal: React.FC<{
   onNext?: () => void;
   onPrevious?: () => void;
   onUserClick?: (username: string) => void;
-}> = ({ item, quality, onClose, onNext, onPrevious, onUserClick }) => {
+  items?: MediaItem[];
+  currentIndex?: number;
+}> = ({ item, quality, onClose, onNext, onPrevious, onUserClick, items = [], currentIndex = 0 }) => {
+  const [isLiked, setIsLiked] = useState(false);
+  const [isBookmarked, setIsBookmarked] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showInfo, setShowInfo] = useState(false);
+  const [isSlideshow, setIsSlideshow] = useState(false);
+  const [slideshowSpeed, setSlideshowSpeed] = useState<SlideshowSpeed>('medium');
+  const [zoomLevel, setZoomLevel] = useState(1);
   const playerRef = useRef<Plyr | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
+  const slideshowIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Slideshow effect
+  useEffect(() => {
+    if (isSlideshow && items.length > 0) {
+      const speedMap = {
+        'slow': 5000,
+        'medium': 3000,
+        'fast': 1500
+      };
+      
+      slideshowIntervalRef.current = setInterval(() => {
+        if (currentIndex < items.length - 1 && onNext) {
+          onNext();
+        } else if (currentIndex === items.length - 1) {
+          // Stop slideshow at the end
+          setIsSlideshow(false);
+        }
+      }, speedMap[slideshowSpeed]);
+      
+      return () => {
+        if (slideshowIntervalRef.current) {
+          clearInterval(slideshowIntervalRef.current);
+        }
+      };
+    } else {
+      if (slideshowIntervalRef.current) {
+        clearInterval(slideshowIntervalRef.current);
+      }
+    }
+  }, [isSlideshow, currentIndex, items.length, onNext, slideshowSpeed]);
   
   useEffect(() => {
     if (item && videoRef.current) {
@@ -759,12 +944,77 @@ const MediaModal: React.FC<{
         onNext();
       } else if (e.key === 'ArrowLeft' && onPrevious) {
         onPrevious();
+      } else if (e.key === 'f') {
+        setIsFullscreen(!isFullscreen);
+      } else if (e.key === 'i') {
+        setShowInfo(!showInfo);
+      } else if (e.key === ' ') {
+        e.preventDefault();
+        setIsSlideshow(!isSlideshow);
+      } else if (e.key === '+' || e.key === '=') {
+        setZoomLevel(prev => Math.min(prev + 0.25, 3));
+      } else if (e.key === '-' || e.key === '_') {
+        setZoomLevel(prev => Math.max(prev - 0.25, 0.5));
+      } else if (e.key === '0') {
+        setZoomLevel(1);
       }
     };
     
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onClose, onNext, onPrevious]);
+  }, [onClose, onNext, onPrevious, isFullscreen, showInfo, isSlideshow]);
+  
+  const handleLike = () => {
+    setIsLiked(!isLiked);
+  };
+  
+  const handleBookmark = () => {
+    setIsBookmarked(!isBookmarked);
+  };
+  
+  const handleShare = () => {
+    // Implement share functionality
+    if (navigator.share) {
+      navigator.share({
+        title: `RedGifs - ${item?.userName}`,
+        text: item?.description || 'Check out this content!',
+        url: window.location.href
+      });
+    }
+  };
+  
+  const handleDownload = () => {
+    // Implement download functionality
+    if (item) {
+      const mediaUrl = quality === 'hd' ? item.urls.hd : item.urls.sd;
+      const link = document.createElement('a');
+      link.href = mediaUrl;
+      link.download = `${item.id}.${item.type === 1 ? 'mp4' : 'jpg'}`;
+      link.click();
+    }
+  };
+  
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      modalRef.current?.requestFullscreen();
+      setIsFullscreen(true);
+    } else {
+      document.exitFullscreen();
+      setIsFullscreen(false);
+    }
+  };
+  
+  const handleZoomIn = () => {
+    setZoomLevel(prev => Math.min(prev + 0.25, 3));
+  };
+  
+  const handleZoomOut = () => {
+    setZoomLevel(prev => Math.max(prev - 0.25, 0.5));
+  };
+  
+  const handleResetZoom = () => {
+    setZoomLevel(1);
+  };
   
   if (!item) return null;
   
@@ -772,99 +1022,217 @@ const MediaModal: React.FC<{
   const isVideo = item.type === 1;
   
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-95 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="relative max-w-6xl max-h-full w-full" onClick={(e) => e.stopPropagation()}>
-        <button 
-          className="absolute top-2 right-2 bg-black bg-opacity-50 rounded-full p-2 text-white z-10 hover:bg-opacity-70 transition-all"
-          onClick={onClose}
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
+    <div 
+      ref={modalRef}
+      className={`fixed inset-0 bg-black bg-opacity-95 z-50 flex items-center justify-center p-2 ${isFullscreen ? 'p-0' : ''}`}
+      onClick={onClose}
+    >
+      <div className="relative max-w-7xl max-h-full w-full h-full" onClick={(e) => e.stopPropagation()}>
+        {/* Compact Top Controls */}
+        <div className="absolute top-0 left-0 right-0 bg-gradient-to-b from-black/70 to-transparent p-2 z-10 flex justify-between items-center">
+          <div className="flex items-center space-x-2">
+            <button 
+              className="bg-black/50 rounded-full p-1.5 text-white hover:bg-black/70 transition-all"
+              onClick={onClose}
+            >
+              <X className="h-4 w-4" />
+            </button>
+            
+            <div className="flex items-center space-x-1 bg-black/50 rounded-full px-2 py-1">
+              <Heart 
+                className={`h-3 w-3 cursor-pointer ${isLiked ? 'fill-red-500 text-red-500' : 'text-white'}`} 
+                onClick={handleLike}
+              />
+              <Bookmark 
+                className={`h-3 w-3 cursor-pointer ${isBookmarked ? 'fill-blue-500 text-blue-500' : 'text-white'}`} 
+                onClick={handleBookmark}
+              />
+              <Share className="h-3 w-3 cursor-pointer text-white" onClick={handleShare} />
+              <Download className="h-3 w-3 cursor-pointer text-white" onClick={handleDownload} />
+            </div>
+            
+            {/* Slideshow Controls */}
+            <div className="flex items-center space-x-1 bg-black/50 rounded-full px-2 py-1">
+              <button
+                className={`text-white p-0.5 rounded-full ${isSlideshow ? 'bg-red-600' : ''}`}
+                onClick={() => setIsSlideshow(!isSlideshow)}
+              >
+                {isSlideshow ? <PauseCircle className="h-3 w-3" /> : <PlayCircle className="h-3 w-3" />}
+              </button>
+              
+              {isSlideshow && (
+                <select
+                  value={slideshowSpeed}
+                  onChange={(e) => setSlideshowSpeed(e.target.value as SlideshowSpeed)}
+                  className="bg-transparent text-white text-xs outline-none"
+                >
+                  <option value="slow">Slow</option>
+                  <option value="medium">Medium</option>
+                  <option value="fast">Fast</option>
+                </select>
+              )}
+            </div>
+            
+            {/* Zoom Controls */}
+            <div className="flex items-center space-x-1 bg-black/50 rounded-full px-2 py-1">
+              <button
+                className="text-white p-0.5 rounded-full"
+                onClick={handleZoomOut}
+                disabled={zoomLevel <= 0.5}
+              >
+                <ZoomOut className="h-3 w-3" />
+              </button>
+              <span className="text-white text-xs">{Math.round(zoomLevel * 100)}%</span>
+              <button
+                className="text-white p-0.5 rounded-full"
+                onClick={handleZoomIn}
+                disabled={zoomLevel >= 3}
+              >
+                <ZoomIn className="h-3 w-3" />
+              </button>
+              <button
+                className="text-white p-0.5 rounded-full"
+                onClick={handleResetZoom}
+                disabled={zoomLevel === 1}
+              >
+                <RotateCw className="h-3 w-3" />
+              </button>
+            </div>
+          </div>
+          
+          <div className="flex items-center space-x-2">
+            <button 
+              className="bg-black/50 rounded-full p-1.5 text-white hover:bg-black/70 transition-all"
+              onClick={() => setShowInfo(!showInfo)}
+            >
+              <Info className="h-4 w-4" />
+            </button>
+            
+            <button 
+              className="bg-black/50 rounded-full p-1.5 text-white hover:bg-black/70 transition-all"
+              onClick={toggleFullscreen}
+            >
+              {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+            </button>
+          </div>
+        </div>
         
+        {/* Navigation Buttons */}
         {onPrevious && (
           <button 
-            className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 rounded-full p-2 text-white z-10 hover:bg-opacity-70 transition-all"
+            className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black/50 rounded-full p-2 text-white z-10 hover:bg-black/70 transition-all"
             onClick={onPrevious}
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
+            <ChevronLeft className="h-5 w-5" />
           </button>
         )}
         
         {onNext && (
           <button 
-            className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 rounded-full p-2 text-white z-10 hover:bg-opacity-70 transition-all"
+            className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black/50 rounded-full p-2 text-white z-10 hover:bg-black/70 transition-all"
             onClick={onNext}
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
+            <ChevronRight className="h-5 w-5" />
           </button>
         )}
         
-        <div className="bg-gray-900 rounded-lg overflow-hidden">
-          {isVideo ? (
-            <video
-              ref={videoRef}
-              src={mediaUrl}
-              poster={item.urls.poster}
-              className="w-full max-h-[80vh] object-contain"
-              playsInline
-            />
-          ) : (
-            <img
-              src={mediaUrl}
-              alt={item.id}
-              className="w-full max-h-[80vh] object-contain"
-            />
-          )}
-          
-          <div className="p-4 text-white">
-            <div className="flex items-center justify-between">
+        {/* Media Content with Zoom */}
+        <div className="flex items-center justify-center h-full overflow-hidden">
+          <div 
+            className="relative transition-transform duration-200"
+            style={{ transform: `scale(${zoomLevel})` }}
+          >
+            {isVideo ? (
+              <video
+                ref={videoRef}
+                src={mediaUrl}
+                poster={item.urls.poster}
+                className="max-w-full max-h-full object-contain"
+                playsInline
+              />
+            ) : (
+              <img
+                src={mediaUrl}
+                alt={item.id}
+                className="max-w-full max-h-full object-contain"
+              />
+            )}
+          </div>
+        </div>
+        
+        {/* Progress Indicator */}
+        {items.length > 1 && (
+          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2 z-10">
+            <div className="flex items-center justify-center space-x-1">
+              {items.map((_, index) => (
+                <div
+                  key={index}
+                  className={`h-1 rounded-full transition-all duration-200 ${
+                    index === currentIndex ? 'bg-blue-500 w-8' : 'bg-gray-500 w-1'
+                  }`}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+        
+        {/* Bottom Info Panel */}
+        {showInfo && (
+          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 to-transparent p-3 z-10">
+            <div className="flex items-center justify-between mb-2">
               <div className="flex items-center space-x-2">
-                <h3 className="font-medium text-lg">{item.userName}</h3>
-                {item.verified && (
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                  </svg>
+                <h3 className="font-medium text-lg text-white flex items-center">
+                  {item.userName}
+                  {item.verified && <UserCheck className="h-4 w-4 text-blue-500 ml-1" />}
+                </h3>
+                {onUserClick && (
+                  <button
+                    className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-2 py-1 rounded transition-colors flex items-center"
+                    onClick={() => onUserClick(item.userName)}
+                  >
+                    <User className="h-3 w-3 mr-1" />
+                    View Profile
+                  </button>
                 )}
               </div>
               
-              {onUserClick && (
-                <button
-                  className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-3 py-1 rounded transition-colors"
-                  onClick={() => onUserClick(item.userName)}
-                >
-                  View Profile
-                </button>
-              )}
+              <div className="flex items-center space-x-4 text-sm text-gray-300">
+                <span className="flex items-center">
+                  <Heart className="h-4 w-4 mr-1" />
+                  {item.likes}
+                </span>
+                <span className="flex items-center">
+                  <Eye className="h-4 w-4 mr-1" />
+                  {item.views}
+                </span>
+                {isVideo && (
+                  <span className="flex items-center">
+                    {item.hasAudio ? <Volume2 className="h-4 w-4 mr-1" /> : <VolumeX className="h-4 w-4 mr-1" />}
+                    {item.duration && `${Math.floor(item.duration / 60)}:${(item.duration % 60).toString().padStart(2, '0')}`}
+                  </span>
+                )}
+              </div>
             </div>
             
-            <div className="flex justify-between mt-2 text-sm text-gray-400">
-              <span>{item.likes} likes</span>
-              <span>{item.views} views</span>
-            </div>
             {item.description && (
-              <p className="mt-2 text-sm text-gray-300">{item.description}</p>
+              <p className="text-sm text-gray-300 mb-2">{item.description}</p>
             )}
-            <div className="mt-2 flex flex-wrap gap-1">
+            
+            <div className="flex flex-wrap gap-1">
               {item.tags.map(tag => (
                 <span key={tag} className="bg-gray-700 text-xs px-2 py-1 rounded text-gray-300">
-                  {tag}
+                  #{tag}
                 </span>
               ))}
             </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
 };
 
-// Masonry Grid Component
+// Enhanced Masonry Grid Component with Virtual Scrolling
 const MasonryGrid: React.FC<{
   items: MediaItem[];
   quality: 'hd' | 'sd';
@@ -887,7 +1255,17 @@ const MasonryGrid: React.FC<{
   isFetchingNextPage
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const [focusedIndex, setFocusedIndex] = useState(0);
   const [columns, setColumns] = useState<MediaItem[][]>([]);
+  const parentRef = useRef<HTMLDivElement>(null);
+  
+  // Virtualizer setup
+  const rowVirtualizer = useVirtualizer({
+    count: Math.ceil(items.length / gridColumns),
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 250, // Estimated row height
+    overscan: 5,
+  });
   
   // Initialize columns
   useEffect(() => {
@@ -902,7 +1280,7 @@ const MasonryGrid: React.FC<{
       // Find the shortest column
       const shortestColumnIndex = columnHeights.indexOf(Math.min(...columnHeights));
       newColumns[shortestColumnIndex].push(item);
-      columnHeights[shortestColumnIndex] += itemHeight + 8; // 8px gap
+      columnHeights[shortestColumnIndex] += itemHeight + 4; // 4px gap
     });
     
     setColumns(newColumns);
@@ -933,38 +1311,93 @@ const MasonryGrid: React.FC<{
     };
   }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
   
+  // Handle keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setFocusedIndex(prev => Math.max(0, prev - gridColumns));
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setFocusedIndex(prev => Math.min(items.length - 1, prev + gridColumns));
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        setFocusedIndex(prev => Math.max(0, prev - 1));
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        setFocusedIndex(prev => Math.min(items.length - 1, prev + 1));
+      } else if (e.key === 'Enter' && items[focusedIndex]) {
+        onItemClick(items[focusedIndex], focusedIndex);
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [focusedIndex, items, gridColumns, onItemClick]);
+  
   return (
-    <div ref={containerRef} className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-900 p-4">
-      <div className="flex gap-2" style={{ height: 'fit-content' }}>
-        {columns.map((column, columnIndex) => (
-          <div key={columnIndex} className="flex-1 flex flex-col gap-2">
-            {column.map((item, itemIndex) => {
-              const globalIndex = items.indexOf(item);
-              const aspectRatio = item.width && item.height ? item.width / item.height : 1;
-              const baseHeight = gridColumns === 1 ? 400 : gridColumns === 2 ? 300 : 240;
-              const itemHeight = baseHeight / aspectRatio;
-              
-              return (
-                <MediaItem
-                  key={item.id}
-                  item={item}
-                  quality={quality}
-                  onClick={() => onItemClick(item, globalIndex)}
-                  onUserClick={onUserClick}
-                  isActive={activeIndex === globalIndex}
-                  style={{ height: `${itemHeight}px` }}
-                  gridColumns={gridColumns}
-                />
-              );
-            })}
-          </div>
-        ))}
+    <div 
+      ref={parentRef}
+      className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-900 p-2"
+      style={{ height: '100%' }}
+    >
+      <div
+        style={{
+          height: `${rowVirtualizer.getTotalSize()}px`,
+          width: '100%',
+          position: 'relative',
+        }}
+      >
+        {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+          const startIndex = virtualRow.index * gridColumns;
+          const endIndex = Math.min(startIndex + gridColumns, items.length);
+          const rowItems = items.slice(startIndex, endIndex);
+          
+          return (
+            <div
+              key={virtualRow.index}
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: `${virtualRow.size}px`,
+                transform: `translateY(${virtualRow.start}px)`,
+              }}
+            >
+              <div className="flex gap-1 h-full">
+                {rowItems.map((item, index) => {
+                  const globalIndex = startIndex + index;
+                  const aspectRatio = item.width && item.height ? item.width / item.height : 1;
+                  const baseHeight = gridColumns === 1 ? 400 : gridColumns === 2 ? 300 : 240;
+                  const itemHeight = baseHeight / aspectRatio;
+                  
+                  return (
+                    <div key={item.id} className="flex-1">
+                      <MediaItem
+                        item={item}
+                        quality={quality}
+                        onClick={() => onItemClick(item, globalIndex)}
+                        onUserClick={onUserClick}
+                        isActive={activeIndex === globalIndex}
+                        style={{ height: `${itemHeight}px` }}
+                        gridColumns={gridColumns}
+                        index={globalIndex}
+                        focusedIndex={focusedIndex}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
       </div>
       
       {hasNextPage && (
-        <div id="scroll-sentinel" className="flex justify-center py-4">
+        <div id="scroll-sentinel" className="flex justify-center py-2">
           {isFetchingNextPage && (
-            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+            <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
           )}
         </div>
       )}
@@ -972,7 +1405,7 @@ const MasonryGrid: React.FC<{
   );
 };
 
-// Grid Settings Menu Component
+// Compact Grid Settings Menu Component
 const GridSettingsMenu: React.FC<{
   isOpen: boolean;
   onClose: () => void;
@@ -984,11 +1417,14 @@ const GridSettingsMenu: React.FC<{
   if (!isOpen) return null;
   
   return (
-    <div className="absolute top-full right-0 mt-2 w-64 bg-gray-800 rounded-lg shadow-lg p-4 z-30">
-      <h3 className="text-white font-medium mb-4">Grid Settings</h3>
+    <div className="absolute top-full right-0 mt-1 w-56 bg-gray-800 rounded shadow-lg p-3 z-30">
+      <h3 className="text-white font-medium mb-3 flex items-center text-sm">
+        <Settings className="h-3 w-3 mr-2" />
+        Grid Settings
+      </h3>
       
-      <div className="mb-4">
-        <label className="text-gray-300 text-sm block mb-2">Columns</label>
+      <div className="mb-3">
+        <label className="text-gray-300 text-xs block mb-1">Columns</label>
         <input
           type="range"
           min="1"
@@ -1004,21 +1440,22 @@ const GridSettingsMenu: React.FC<{
         </div>
       </div>
       
-      <div className="mb-4">
-        <label className="flex items-center text-gray-300 text-sm cursor-pointer">
+      <div className="mb-3">
+        <label className="flex items-center text-gray-300 text-xs cursor-pointer">
           <input
             type="checkbox"
             checked={aiFilter}
             onChange={(e) => setAiFilter(e.target.checked)}
             className="mr-2"
           />
+          <Filter className="h-3 w-3 mr-1" />
           Filter AI Content
         </label>
       </div>
       
       <button
         onClick={onClose}
-        className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded transition-colors"
+        className="w-full bg-blue-600 hover:bg-blue-700 text-white py-1.5 rounded text-sm transition-colors"
       >
         Close
       </button>
@@ -1026,7 +1463,7 @@ const GridSettingsMenu: React.FC<{
   );
 };
 
-// Search Component
+// Compact Search Component
 const SearchComponent: React.FC<{
   isOpen: boolean;
   onClose: () => void;
@@ -1064,20 +1501,23 @@ const SearchComponent: React.FC<{
   };
   
   return (
-    <div className="absolute top-full right-0 mt-2 w-96 bg-gray-800 rounded-lg shadow-lg p-4 z-30">
-      <form onSubmit={handleSearchSubmit} className="flex items-center space-x-2 mb-4">
-        <input
-          type="text"
-          placeholder="Search users, creators, or content..."
-          className="flex-1 bg-gray-700 text-white px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          autoFocus
-        />
+    <div className="absolute top-full right-0 mt-1 w-80 bg-gray-800 rounded shadow-lg p-3 z-30">
+      <form onSubmit={handleSearchSubmit} className="flex items-center space-x-2 mb-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3 w-3 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Search users, creators, or content..."
+            className="w-full bg-gray-700 text-white pl-7 pr-2 py-1.5 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            autoFocus
+          />
+        </div>
         <select
           value={searchType}
           onChange={(e) => setSearchType(e.target.value as any)}
-          className="bg-gray-700 text-white px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="bg-gray-700 text-white px-2 py-1.5 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
         >
           <option value="all">All</option>
           <option value="user">User Profile</option>
@@ -1087,7 +1527,7 @@ const SearchComponent: React.FC<{
       </form>
       
       {searchQuery && (
-        <div className="max-h-96 overflow-y-auto">
+        <div className="max-h-80 overflow-y-auto">
           {searchQueryResult.data?.pages.flatMap(page => {
             if (searchType === 'user') {
               return page.users || [];
@@ -1115,8 +1555,9 @@ const SearchComponent: React.FC<{
                 />
               )}
               <div className="flex-1">
-                <div className="text-white text-sm truncate">
+                <div className="text-white text-sm truncate flex items-center">
                   {item.name || item.userName}
+                  {item.verified && <UserCheck className="h-3 w-3 text-blue-500 ml-1" />}
                 </div>
                 <div className="text-gray-400 text-xs">
                   {item.username ? `@${item.username}` : `${item.likes} likes`}
@@ -1128,9 +1569,16 @@ const SearchComponent: React.FC<{
           {searchQueryResult.hasNextPage && (
             <button
               onClick={() => searchQueryResult.fetchNextPage()}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded mt-2 transition-colors"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white py-1.5 rounded mt-2 text-sm transition-colors flex items-center justify-center"
             >
-              Load More
+              {searchQueryResult.isFetchingNextPage ? (
+                <>
+                  <Loader2 className="h-3 w-3 mr-2 animate-spin" />
+                  Loading...
+                </>
+              ) : (
+                'Load More'
+              )}
             </button>
           )}
         </div>
@@ -1139,7 +1587,7 @@ const SearchComponent: React.FC<{
   );
 };
 
-// Main App Component
+// Enhanced Main App Component
 const RedGifsApp: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'trends' | 'creators' | 'niches' | 'search'>('trends');
   const [quality, setQuality] = useState<'hd' | 'sd'>('hd');
@@ -1154,6 +1602,8 @@ const RedGifsApp: React.FC = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [sortOption, setSortOption] = useState<SortOption>('trending');
   const [contentType, setContentType] = useState<ContentType>('all');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [compactMode, setCompactMode] = useState(true);
   
   const queryClient = useQueryClient();
   const { isAuthenticated } = useAuth();
@@ -1294,6 +1744,8 @@ const RedGifsApp: React.FC = () => {
           setIsGridSettingsOpen(false);
         } else if (isSearchOpen) {
           setIsSearchOpen(false);
+        } else if (isSidebarOpen) {
+          setIsSidebarOpen(false);
         }
       } else if (e.key === 'ArrowUp' && !selectedMedia) {
         e.preventDefault();
@@ -1306,12 +1758,16 @@ const RedGifsApp: React.FC = () => {
       } else if (e.key === '/' && !selectedMedia) {
         e.preventDefault();
         setIsSearchOpen(true);
+      } else if (e.key === 'm' && !selectedMedia) {
+        setIsSidebarOpen(!isSidebarOpen);
+      } else if (e.key === 'c' && !selectedMedia) {
+        setCompactMode(!compactMode);
       }
     };
     
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedMedia, selectedCreator, selectedNiche, displayData, focusedItemIndex, isGridSettingsOpen, isSearchOpen]);
+  }, [selectedMedia, selectedCreator, selectedNiche, displayData, focusedItemIndex, isGridSettingsOpen, isSearchOpen, isSidebarOpen, compactMode]);
   
   // Handle media item click
   const handleMediaClick = useCallback((item: MediaItem, index: number) => {
@@ -1324,6 +1780,7 @@ const RedGifsApp: React.FC = () => {
   const handleCreatorClick = useCallback((creator: Creator) => {
     setSelectedCreator(creator.username);
     setSelectedNiche(null);
+    setSelectedMedia(null); // Close any open media
     setFocusedItemIndex(0);
   }, []);
   
@@ -1331,6 +1788,7 @@ const RedGifsApp: React.FC = () => {
   const handleNicheClick = useCallback((niche: Niche) => {
     setSelectedNiche(niche.id);
     setSelectedCreator(null);
+    setSelectedMedia(null); // Close any open media
     setFocusedItemIndex(0);
   }, []);
   
@@ -1338,6 +1796,7 @@ const RedGifsApp: React.FC = () => {
   const handleUserProfileClick = useCallback((username: string) => {
     setSelectedCreator(username);
     setSelectedNiche(null);
+    setSelectedMedia(null); // Close any open media
     setFocusedItemIndex(0);
   }, []);
   
@@ -1345,6 +1804,7 @@ const RedGifsApp: React.FC = () => {
   const handleBack = useCallback(() => {
     setSelectedCreator(null);
     setSelectedNiche(null);
+    setSelectedMedia(null); // Close any open media
     setFocusedItemIndex(0);
   }, []);
   
@@ -1373,7 +1833,7 @@ const RedGifsApp: React.FC = () => {
       return (
         <div className="flex items-center justify-center h-full">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto mb-4"></div>
+            <Loader2 className="h-12 w-12 animate-spin text-blue-500 mx-auto mb-4" />
             <p className="text-white">Authenticating with RedGifs...</p>
           </div>
         </div>
@@ -1383,7 +1843,7 @@ const RedGifsApp: React.FC = () => {
     if (isLoading && displayData.length === 0) {
       return (
         <div className="flex items-center justify-center h-full">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+          <Loader2 className="h-12 w-12 animate-spin text-blue-500" />
         </div>
       );
     }
@@ -1403,17 +1863,16 @@ const RedGifsApp: React.FC = () => {
     
     if (selectedNiche && nicheContentQuery.data) {
       return (
-        <div className="flex flex-col h-full">
-          <div className="bg-gray-800 p-4 flex items-center">
+        <div className="flex flex-col h-full overflow-hidden">
+          <div className="bg-gray-800 p-2 flex items-center shadow-lg">
             <button 
-              className="mr-4 bg-gray-700 rounded-full p-2 text-white hover:bg-gray-600 transition-colors"
+              className="mr-3 bg-gray-700 rounded-full p-1.5 text-white hover:bg-gray-600 transition-colors"
               onClick={handleBack}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
-              </svg>
+              <ArrowLeft className="h-4 w-4" />
             </button>
-            <h2 className="text-xl font-bold text-white">
+            <h2 className="text-lg font-bold text-white flex items-center">
+              <Hash className="h-4 w-4 mr-2" />
               {nicheContentQuery.data.pages[0]?.niches?.find(n => n.id === selectedNiche)?.name || selectedNiche}
             </h2>
           </div>
@@ -1435,18 +1894,21 @@ const RedGifsApp: React.FC = () => {
     
     if (activeTab === 'trends') {
       return (
-        <div className="flex flex-col h-full">
-          <div className="bg-gray-800 p-4 flex items-center justify-between">
-            <h2 className="text-xl font-bold text-white">Trending</h2>
+        <div className="flex flex-col h-full overflow-hidden">
+          <div className="bg-gray-800 p-2 flex items-center justify-between shadow-lg">
+            <h2 className="text-lg font-bold text-white flex items-center">
+              <TrendingUp className="h-4 w-4 mr-2" />
+              Trending
+            </h2>
             
-            {/* Sort and Filter Options */}
-            <div className="flex space-x-4">
-              <div className="flex items-center space-x-2">
-                <label className="text-gray-300 text-sm">Sort:</label>
+            {/* Compact Sort and Filter Options */}
+            <div className="flex space-x-3">
+              <div className="flex items-center space-x-1">
+                <label className="text-gray-300 text-xs">Sort:</label>
                 <select
                   value={sortOption}
                   onChange={(e) => setSortOption(e.target.value as SortOption)}
-                  className="bg-gray-700 text-white px-3 py-1 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="bg-gray-700 text-white px-2 py-0.5 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
                 >
                   <option value="trending">Trending</option>
                   <option value="new">Latest</option>
@@ -1457,12 +1919,12 @@ const RedGifsApp: React.FC = () => {
                 </select>
               </div>
               
-              <div className="flex items-center space-x-2">
-                <label className="text-gray-300 text-sm">Type:</label>
+              <div className="flex items-center space-x-1">
+                <label className="text-gray-300 text-xs">Type:</label>
                 <select
                   value={contentType}
                   onChange={(e) => setContentType(e.target.value as ContentType)}
-                  className="bg-gray-700 text-white px-3 py-1 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="bg-gray-700 text-white px-2 py-0.5 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
                 >
                   <option value="all">All</option>
                   <option value="gifs">Gifs</option>
@@ -1490,18 +1952,21 @@ const RedGifsApp: React.FC = () => {
     
     if (activeTab === 'creators') {
       return (
-        <div className="flex flex-col h-full">
-          <div className="bg-gray-800 p-4 flex items-center justify-between">
-            <h2 className="text-xl font-bold text-white">Creators</h2>
+        <div className="flex flex-col h-full overflow-hidden">
+          <div className="bg-gray-800 p-2 flex items-center justify-between shadow-lg">
+            <h2 className="text-lg font-bold text-white flex items-center">
+              <Users className="h-4 w-4 mr-2" />
+              Creators
+            </h2>
             
-            {/* Sort Options */}
-            <div className="flex space-x-4">
-              <div className="flex items-center space-x-2">
-                <label className="text-gray-300 text-sm">Sort:</label>
+            {/* Compact Sort Options */}
+            <div className="flex space-x-3">
+              <div className="flex items-center space-x-1">
+                <label className="text-gray-300 text-xs">Sort:</label>
                 <select
                   value={sortOption}
                   onChange={(e) => setSortOption(e.target.value as SortOption)}
-                  className="bg-gray-700 text-white px-3 py-1 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="bg-gray-700 text-white px-2 py-0.5 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
                 >
                   <option value="trending">Trending</option>
                   <option value="new">Latest</option>
@@ -1514,8 +1979,8 @@ const RedGifsApp: React.FC = () => {
             </div>
           </div>
           
-          <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-900 p-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-900 p-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
               {creatorsQuery.data?.pages.flatMap(page => page.users || []).map(creator => (
                 <CreatorCard
                   key={creator.username}
@@ -1526,13 +1991,20 @@ const RedGifsApp: React.FC = () => {
             </div>
             
             {hasNextPage && (
-              <div className="flex justify-center mt-4">
+              <div className="flex justify-center mt-3">
                 <button 
-                  className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-1.5 px-3 rounded text-sm transition-colors flex items-center"
                   onClick={() => fetchNextPage && fetchNextPage()}
                   disabled={isLoading}
                 >
-                  {isLoading ? 'Loading...' : 'Load More'}
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="h-3 w-3 mr-2 animate-spin" />
+                      Loading...
+                    </>
+                  ) : (
+                    'Load More'
+                  )}
                 </button>
               </div>
             )}
@@ -1543,13 +2015,16 @@ const RedGifsApp: React.FC = () => {
     
     if (activeTab === 'niches') {
       return (
-        <div className="flex flex-col h-full">
-          <div className="bg-gray-800 p-4">
-            <h2 className="text-xl font-bold text-white">Niches</h2>
+        <div className="flex flex-col h-full overflow-hidden">
+          <div className="bg-gray-800 p-2 shadow-lg">
+            <h2 className="text-lg font-bold text-white flex items-center">
+              <Hash className="h-4 w-4 mr-2" />
+              Niches
+            </h2>
           </div>
           
-          <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-900 p-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-900 p-2">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2">
               {nichesQuery.data?.pages.flatMap(page => page.niches || []).map(niche => (
                 <NicheCard
                   key={niche.id}
@@ -1560,13 +2035,20 @@ const RedGifsApp: React.FC = () => {
             </div>
             
             {hasNextPage && (
-              <div className="flex justify-center mt-4">
+              <div className="flex justify-center mt-3">
                 <button 
-                  className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-1.5 px-3 rounded text-sm transition-colors flex items-center"
                   onClick={() => fetchNextPage && fetchNextPage()}
                   disabled={isLoading}
                 >
-                  {isLoading ? 'Loading...' : 'Load More'}
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="h-3 w-3 mr-2 animate-spin" />
+                      Loading...
+                    </>
+                  ) : (
+                    'Load More'
+                  )}
                 </button>
               </div>
             )}
@@ -1579,23 +2061,31 @@ const RedGifsApp: React.FC = () => {
   };
   
   return (
-    <div className="flex flex-col h-screen bg-gray-900 text-white">
-      {/* Header */}
-      <header className="bg-gray-800 p-4 flex items-center justify-between shadow-lg">
-        <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
-          RedGifs Viewer
-        </h1>
+    <div className={`flex flex-col h-screen bg-gray-900 text-white overflow-hidden ${compactMode ? '' : ''}`}>
+      {/* Compact Header */}
+      <header className={`bg-gray-800 ${compactMode ? 'p-2' : 'p-4'} flex items-center justify-between shadow-lg z-20`}>
+        <div className="flex items-center">
+          <button 
+            className="bg-gray-700 rounded-full p-1.5 text-white hover:bg-gray-600 transition-colors mr-3 md:hidden"
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+          >
+            <Menu className="h-4 w-4" />
+          </button>
+          
+          <h1 className={`${compactMode ? 'text-lg' : 'text-2xl'} font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent flex items-center`}>
+            <Sparkles className={`${compactMode ? 'h-4 w-4' : 'h-6 w-6'} mr-2`} />
+            RedGifs Viewer
+          </h1>
+        </div>
         
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-2">
           {/* Search */}
           <div className="relative">
             <button 
-              className="bg-gray-700 rounded-full p-2 text-white hover:bg-gray-600 transition-colors"
+              className="bg-gray-700 rounded-full p-1.5 text-white hover:bg-gray-600 transition-colors"
               onClick={() => setIsSearchOpen(!isSearchOpen)}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
+              <Search className="h-4 w-4" />
             </button>
             
             <SearchComponent
@@ -1609,12 +2099,10 @@ const RedGifsApp: React.FC = () => {
           {/* Grid Settings */}
           <div className="relative">
             <button 
-              className="bg-gray-700 rounded-full p-2 text-white hover:bg-gray-600 transition-colors"
+              className="bg-gray-700 rounded-full p-1.5 text-white hover:bg-gray-600 transition-colors"
               onClick={() => setIsGridSettingsOpen(!isGridSettingsOpen)}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-              </svg>
+              <Grid className="h-4 w-4" />
             </button>
             
             <GridSettingsMenu
@@ -1629,10 +2117,26 @@ const RedGifsApp: React.FC = () => {
           
           {/* Quality Toggle */}
           <button 
-            className="bg-gray-700 rounded-full px-3 py-1 text-white text-sm hover:bg-gray-600 transition-colors"
+            className="bg-gray-700 rounded-full px-2 py-1 text-white text-xs hover:bg-gray-600 transition-colors flex items-center"
             onClick={() => setQuality(quality === 'hd' ? 'sd' : 'hd')}
           >
-            {quality === 'hd' ? 'HD' : 'SD'}
+            {quality === 'hd' ? (
+              <>
+                <Zap className="h-3 w-3 mr-1" />
+                HD
+              </>
+            ) : (
+              'SD'
+            )}
+          </button>
+          
+          {/* Compact Mode Toggle */}
+          <button 
+            className="bg-gray-700 rounded-full p-1.5 text-white hover:bg-gray-600 transition-colors"
+            onClick={() => setCompactMode(!compactMode)}
+            title={compactMode ? 'Expand Mode' : 'Compact Mode'}
+          >
+            <Sliders className="h-4 w-4" />
           </button>
         </div>
       </header>
@@ -1642,37 +2146,34 @@ const RedGifsApp: React.FC = () => {
         {renderContent()}
       </main>
       
-      {/* Navigation Bar */}
-      <nav className="bg-gray-800 p-2 flex items-center justify-around shadow-lg">
+      {/* Compact Navigation Bar */}
+      <nav className={`bg-gray-800 ${compactMode ? 'p-1' : 'p-2'} flex items-center justify-around shadow-lg`}>
         <button 
-          className={`p-2 rounded transition-colors ${activeTab === 'trends' ? 'bg-blue-600' : 'bg-gray-700 hover:bg-gray-600'}`}
+          className={`p-1.5 rounded transition-colors flex items-center justify-center ${activeTab === 'trends' ? 'bg-blue-600' : 'bg-gray-700 hover:bg-gray-600'}`}
           onClick={() => setActiveTab('trends')}
+          title="Trending"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-          </svg>
+          <TrendingUp className="h-4 w-4" />
         </button>
         
         <button 
-          className={`p-2 rounded transition-colors ${activeTab === 'creators' ? 'bg-blue-600' : 'bg-gray-700 hover:bg-gray-600'}`}
+          className={`p-1.5 rounded transition-colors flex items-center justify-center ${activeTab === 'creators' ? 'bg-blue-600' : 'bg-gray-700 hover:bg-gray-600'}`}
           onClick={() => setActiveTab('creators')}
+          title="Creators"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-          </svg>
+          <Users className="h-4 w-4" />
         </button>
         
         <button 
-          className={`p-2 rounded transition-colors ${activeTab === 'niches' ? 'bg-blue-600' : 'bg-gray-700 hover:bg-gray-600'}`}
+          className={`p-1.5 rounded transition-colors flex items-center justify-center ${activeTab === 'niches' ? 'bg-blue-600' : 'bg-gray-700 hover:bg-gray-600'}`}
           onClick={() => setActiveTab('niches')}
+          title="Niches"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-          </svg>
+          <Hash className="h-4 w-4" />
         </button>
       </nav>
       
-      {/* Media Modal */}
+      {/* Enhanced Media Modal with Slideshow */}
       <MediaModal
         item={selectedMedia}
         quality={quality}
@@ -1680,6 +2181,8 @@ const RedGifsApp: React.FC = () => {
         onNext={handleNextMedia}
         onPrevious={handlePreviousMedia}
         onUserClick={handleUserProfileClick}
+        items={displayData}
+        currentIndex={currentMediaIndex}
       />
     </div>
   );
@@ -1697,3 +2200,4 @@ function RouteComponent() {
 export const Route = createFileRoute('/redgifs')({
   component: RouteComponent,
 });
+
