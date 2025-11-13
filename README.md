@@ -1,4 +1,4 @@
-# CoomerLabs: Ultimate Content Management Platform
+# CoomerLabs: Ultimate Coomer Content Viewer
 
 <div align="center">
   <img src="https://github.com/user-attachments/assets/c5e3c0fe-122c-424f-8d8d-90d516c80a4f" alt="CoomerLabs Hero" width="800">
@@ -9,10 +9,13 @@
   [![Electron](https://img.shields.io/badge/Electron-191970?logo=Electron&logoColor=white)](https://www.electronjs.org/)
   [![TanStack](https://img.shields.io/badge/TanStack-FF4154?logo=reactquery&logoColor=white)](https://tanstack.com/)
 </div>
+Disclaimer: This app doesnt host or support distribution or anyway content, it's just a educational experiment that fetches data from other party. We respect the platforms copyright and content policies. In any case please email to aiwag@duck.com for concerns
 
 ## 🌟 Overview
 
 CoomerLabs is a sophisticated content management platform that brings together multiple content sources into one elegant, feature-rich application. Built with modern web technologies, it provides a seamless experience for browsing, organizing, and enjoying various types of digital content.
+
+Use https://github.com/aiwag/coomerlabs-server for unlocking additional content.
 
 ## ✨ Key Features
 

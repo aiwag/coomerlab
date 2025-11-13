@@ -57,13 +57,13 @@
     "globals": "^16.5.0",
     "jsdom": "^27.2.0",
     "prettier": "^3.6.2",
-    "prettier-plugin-tailwindcss": "^0.6.14",
-    "tailwindcss": "^4.1.17",
+    "prettier-plugin-tailwindcss": "^0.7.1",
+    "tailwindcss": "^4.1.16",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3",
-    "typescript-eslint": "^8.46.4",
-    "vite": "^7.2.2",
-    "vitest": "^3.2.4"
+    "typescript-eslint": "^8.46.2",
+    "vite": "^7.1.12",
+    "vitest": "^4.0.5"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -106,7 +106,7 @@
     "framer-motion": "^12.23.24",
     "i18next": "^25.6.2",
     "idb-keyval": "^6.2.2",
-    "lucide-react": "^0.545.0",
+    "lucide-react": "^0.552.0",
     "ofetch": "^1.5.1",
     "perfect-debounce": "^2.0.0",
     "plyr-react": "^5.3.0",
